@@ -7,6 +7,7 @@ from xgboost import XGBClassifier, XGBRegressor
 from imblearn.over_sampling import SMOTE
 from sklearn.metrics import accuracy_score, mean_squared_error
 from tabulate import tabulate
+from sklearn.metrics import accuracy_score
 
 # Cargar el dataset
 df = pd.read_csv("PremierLeague.csv")
@@ -61,6 +62,7 @@ else:
 # Separar los conjuntos de entrenamiento y prueba
 X_train, X_test, y_train_result, y_test_result = train_test_split(X_preprocessed, y_result, test_size=0.2, random_state=42)
 
+
 # Manejo del desbalanceo con SMOTE
 smote = SMOTE(random_state=42)
 X_train_res_smote, y_train_res_smote = smote.fit_resample(X_train, y_train_result)
@@ -82,6 +84,12 @@ model_home_goals.fit(X_train_home_goals, y_train_home_goals)
 # Modelo de predicción de goles del equipo visitante
 model_away_goals = XGBRegressor(random_state=42)
 model_away_goals.fit(X_train_away_goals, y_train_away_goals)
+
+# Realizar predicciones en el conjunto de prueba
+y_pred_test = model_result.predict(X_test)
+
+# Calcular la precisión del modelo
+accuracy = accuracy_score(y_test_result, y_pred_test)
 
 # Función mejorada para predecir partido futuro con los puntos de los equipos
 def predecir_partido_futuro_mejorado(home_team, away_team, bet365_home, bet365_draw, bet365_away, home_team_points, away_team_points,
@@ -139,6 +147,9 @@ def predecir_partido_futuro_mejorado(home_team, away_team, bet365_home, bet365_d
     ]
     
     print(tabulate(resultados, headers=["Descripción", "Valor"], tablefmt="fancy_grid"))
+    
+     # Mostrar la precisión del modelo
+    print(f'\nPrecisión del modelo en el conjunto de prueba: {accuracy * 100:.2f}%')
 
 # Llamada de ejemplo con los nuevos parámetros
 predecir_partido_futuro_mejorado(

@@ -15,15 +15,25 @@ df = pd.read_csv("PremierLeague.csv")
 df['B365HomeTeam'] = pd.to_numeric(df['B365HomeTeam'], errors='coerce')
 df['B365Draw'] = pd.to_numeric(df['B365Draw'], errors='coerce')
 df['B365AwayTeam'] = pd.to_numeric(df['B365AwayTeam'], errors='coerce')
+df['B365Over2.5Goals'] = pd.to_numeric(df['B365Over2.5Goals'], errors='coerce')
+df['B365Under2.5Goals'] = pd.to_numeric(df['B365Under2.5Goals'], errors='coerce')
 
 # Columnas que podrían tener valores nulos
-columns_with_na = ['FullTimeHomeTeamGoals', 'FullTimeAwayTeamGoals', 'B365HomeTeam', 'B365Draw', 'B365AwayTeam']
+columns_with_na = ['FullTimeHomeTeamGoals', 'FullTimeAwayTeamGoals', 'B365HomeTeam', 'B365Draw', 'B365AwayTeam', 
+                   'B365Over2.5Goals', 'B365Under2.5Goals', 'HomeTeamShots', 'AwayTeamShots',
+                   'HomeTeamShotsOnTarget', 'AwayTeamShotsOnTarget', 'HomeTeamCorners', 'AwayTeamCorners',
+                   'HomeTeamYellowCards', 'AwayTeamYellowCards', 'HomeTeamRedCards', 'AwayTeamRedCards',
+                   'HalfTimeHomeTeamGoals', 'HalfTimeAwayTeamGoals']
 
 # Llenar valores nulos con la media
 df[columns_with_na] = df[columns_with_na].fillna(df[columns_with_na].mean())
 
 # Dividir las columnas entre numéricas y categóricas
-numerical_features = ['B365HomeTeam', 'B365Draw', 'B365AwayTeam']
+numerical_features = ['B365HomeTeam', 'B365Draw', 'B365AwayTeam', 'HomeTeamPoints', 'AwayTeamPoints',
+                      'HomeTeamShots', 'AwayTeamShots', 'HomeTeamShotsOnTarget', 'AwayTeamShotsOnTarget',
+                      'HomeTeamCorners', 'AwayTeamCorners', 'HomeTeamYellowCards', 'AwayTeamYellowCards',
+                      'HomeTeamRedCards', 'AwayTeamRedCards', 'B365Over2.5Goals', 'B365Under2.5Goals',
+                      'HalfTimeHomeTeamGoals', 'HalfTimeAwayTeamGoals']
 categorical_features = ['HomeTeam', 'AwayTeam']
 
 # Crear el preprocesador
@@ -73,15 +83,34 @@ model_home_goals.fit(X_train_home_goals, y_train_home_goals)
 model_away_goals = XGBRegressor(random_state=42)
 model_away_goals.fit(X_train_away_goals, y_train_away_goals)
 
-# Función mejorada para predecir partido futuro con formato de salida mejorado
-def predecir_partido_futuro_mejorado(home_team, away_team, bet365_home, bet365_draw, bet365_away):
+# Función mejorada para predecir partido futuro con los puntos de los equipos
+def predecir_partido_futuro_mejorado(home_team, away_team, bet365_home, bet365_draw, bet365_away, home_team_points, away_team_points,
+                                     home_shots, away_shots, home_shots_on_target, away_shots_on_target, home_corners, away_corners,
+                                     home_yellow_cards, away_yellow_cards, home_red_cards, away_red_cards, halftime_home_goals, halftime_away_goals,
+                                     b365_over_2_5_goals, b365_under_2_5_goals):
     # Crear un nuevo dataframe con los datos del partido futuro
     partido_futuro = pd.DataFrame({
         'HomeTeam': [home_team],
         'AwayTeam': [away_team],
         'B365HomeTeam': [bet365_home],
         'B365Draw': [bet365_draw],
-        'B365AwayTeam': [bet365_away]
+        'B365AwayTeam': [bet365_away],
+        'HomeTeamPoints': [home_team_points],
+        'AwayTeamPoints': [away_team_points],
+        'HomeTeamShots': [home_shots],
+        'AwayTeamShots': [away_shots],
+        'HomeTeamShotsOnTarget': [home_shots_on_target],
+        'AwayTeamShotsOnTarget': [away_shots_on_target],
+        'HomeTeamCorners': [home_corners],
+        'AwayTeamCorners': [away_corners],
+        'HomeTeamYellowCards': [home_yellow_cards],
+        'AwayTeamYellowCards': [away_yellow_cards],
+        'HomeTeamRedCards': [home_red_cards],
+        'AwayTeamRedCards': [away_red_cards],
+        'HalfTimeHomeTeamGoals': [halftime_home_goals],
+        'HalfTimeAwayTeamGoals': [halftime_away_goals],
+        'B365Over2.5Goals': [b365_over_2_5_goals],
+        'B365Under2.5Goals': [b365_under_2_5_goals]
     })
     
     # Preprocesar el nuevo partido
@@ -102,6 +131,8 @@ def predecir_partido_futuro_mejorado(home_team, away_team, bet365_home, bet365_d
         ["Probabilidad Casa (B365)", bet365_home],
         ["Probabilidad Empate (B365)", bet365_draw],
         ["Probabilidad Visitante (B365)", bet365_away],
+        ["Puntos del equipo local", home_team_points],
+        ["Puntos del equipo visitante", away_team_points],
         ["Resultado Predicho", resultado_predicho_label[0]],
         ["Goles Local Predichos", round(goles_local_predichos[0], 2)],
         ["Goles Visitante Predichos", round(goles_visitante_predichos[0], 2)]
@@ -109,42 +140,12 @@ def predecir_partido_futuro_mejorado(home_team, away_team, bet365_home, bet365_d
     
     print(tabulate(resultados, headers=["Descripción", "Valor"], tablefmt="fancy_grid"))
 
-# Ejemplo de uso
-predecir_partido_futuro_mejorado("Liverpool", "Chelsea", bet365_home=1.6, bet365_draw=4.5, bet365_away=5.25)
-
-"""
-
-# Ajuste de hiperparámetros del modelo de clasificación
-param_grid = {
-    'n_estimators': [100, 200, 300],
-    'max_depth': [10, 20, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4],
-    'max_features': ['auto', 'sqrt']
-}
-
-classification_model = RandomForestClassifier(random_state=42)
-grid_search = GridSearchCV(estimator=classification_model, param_grid=param_grid, cv=5, scoring='accuracy', n_jobs=-1)
-grid_search.fit(X_train_resampled, y_train_resultado_resampled)
-
-# Evaluación del modelo para la predicción de goles (MSE)
-y_pred_goles_local = regression_model_local.predict(X_test_scaled)
-y_pred_goles_visitante = regression_model_visitante.predict(X_test_scaled)
-mse_local = mean_squared_error(y_test_goles_local, y_pred_goles_local)
-mse_visitante = mean_squared_error(y_test_goles_visitante, y_pred_goles_visitante)
-
-# Salida mejorada para la evaluación del modelo
-print("\n" + "="*50)
-print("🔍 Evaluación del Modelo")
-print("="*50)
-print(f"📊 Error Cuadrático Medio (MSE) Goles Local: {mse_local:.4f}")
-print(f"📊 Error Cuadrático Medio (MSE) Goles Visitante: {mse_visitante:.4f}")
-print("="*50)
-
-# Evaluación del modelo de clasificación (precisión)
-y_pred_resultado = grid_search.predict(X_test_scaled)
-accuracy = accuracy_score(y_test_resultado, y_pred_resultado)
-print(f"🎯 Precisión del Modelo de Clasificación (Resultado): {accuracy:.4%}")
-print(f"🔧 Mejores parámetros encontrados por GridSearchCV: {grid_search.best_params_}")
-print("="*50)
-"""
+# Llamada de ejemplo con los nuevos parámetros
+predecir_partido_futuro_mejorado(
+    "Liverpool", "Chelsea", bet365_home=1.6, bet365_draw=4.5, bet365_away=5.25,
+    home_team_points=45, away_team_points=38,
+    home_shots=12, away_shots=8, home_shots_on_target=6, away_shots_on_target=3,
+    home_corners=5, away_corners=2, home_yellow_cards=2, away_yellow_cards=3,
+    home_red_cards=0, away_red_cards=1, halftime_home_goals=1, halftime_away_goals=0,
+    b365_over_2_5_goals=1.8, b365_under_2_5_goals=2.1
+)

@@ -153,10 +153,10 @@ def predecir_partido_futuro_mejorado(home_team, away_team, bet365_home, bet365_d
 
 # Llamada de ejemplo con los nuevos parámetros
 predecir_partido_futuro_mejorado(
-    "Liverpool", "Chelsea", bet365_home=1.6, bet365_draw=4.5, bet365_away=5.25,
-    home_team_points=45, away_team_points=38,
-    home_shots=12, away_shots=8, home_shots_on_target=6, away_shots_on_target=3,
-    home_corners=5, away_corners=2, home_yellow_cards=2, away_yellow_cards=3,
-    home_red_cards=0, away_red_cards=1, halftime_home_goals=1, halftime_away_goals=0,
-    b365_over_2_5_goals=1.8, b365_under_2_5_goals=2.1
+    "Arsenal", "Liverpool", bet365_home=2.2, bet365_draw=3.35, bet365_away=3.2,
+    home_team_points=17, away_team_points=21,
+    home_shots=6, away_shots=8, home_shots_on_target=1, away_shots_on_target=5,
+    home_corners=4, away_corners=1, home_yellow_cards=1, away_yellow_cards=4,
+    home_red_cards=1, away_red_cards=0, halftime_home_goals=0, halftime_away_goals=1,
+    b365_over_2_5_goals=1.8, b365_under_2_5_goals=2
 )

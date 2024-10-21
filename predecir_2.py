@@ -61,18 +61,18 @@ regression_model_local.fit(X_train_scaled, y_train_goles_local)
 regression_model_visitante = LinearRegression()
 regression_model_visitante.fit(X_train_scaled, y_train_goles_visitante)
 
-# Ajuste de hiperparámetros del modelo de clasificación
-param_grid = {
-    'n_estimators': [100, 200, 300],
-    'max_depth': [10, 20, None],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4],
-    'max_features': ['auto', 'sqrt']
-}
+# Modelo de clasificación con los mejores parámetros encontrados por GridSearchCV
+classification_model = RandomForestClassifier(
+    random_state=42,
+    max_depth=None, 
+    max_features='sqrt', 
+    min_samples_leaf=1, 
+    min_samples_split=2, 
+    n_estimators=300
+)
 
-classification_model = RandomForestClassifier(random_state=42)
-grid_search = GridSearchCV(estimator=classification_model, param_grid=param_grid, cv=5, scoring='accuracy', n_jobs=-1)
-grid_search.fit(X_train_resampled, y_train_resultado_resampled)
+# Entrenar el modelo con el conjunto de entrenamiento
+classification_model.fit(X_train_resampled, y_train_resultado_resampled)
 
 # Evaluación del modelo para la predicción de goles (MSE)
 y_pred_goles_local = regression_model_local.predict(X_test_scaled)
@@ -80,15 +80,16 @@ y_pred_goles_visitante = regression_model_visitante.predict(X_test_scaled)
 mse_local = mean_squared_error(y_test_goles_local, y_pred_goles_local)
 mse_visitante = mean_squared_error(y_test_goles_visitante, y_pred_goles_visitante)
 
+# Mostrar evaluación de los modelos
 print("\n--- Evaluación del modelo ---")
-print(f"Error cuadrático medio (MSE) Goles Local: {mse_local:.4f}")
-print(f"Error cuadrático medio (MSE) Goles Visitante: {mse_visitante:.4f}\n")
+print(f"⚽ Error cuadrático medio (MSE) Goles Local: {mse_local:.4f}")
+print(f"⚽ Error cuadrático medio (MSE) Goles Visitante: {mse_visitante:.4f}\n")
 
 # Evaluación del modelo de clasificación (precisión)
-y_pred_resultado = grid_search.predict(X_test_scaled)
+y_pred_resultado = classification_model.predict(X_test_scaled)
 accuracy = accuracy_score(y_test_resultado, y_pred_resultado)
-print(f"Precisión del modelo de clasificación (resultado): {accuracy:.4%}\n")
-print("Mejores parámetros encontrados por GridSearchCV:", grid_search.best_params_)
+print(f"🎯 Precisión del Modelo de Clasificación (Resultado): {accuracy:.4%}")
+#print(f"🔧 Mejores parámetros encontrados por GridSearchCV: {classification_model.best_params_}")
 
 # Predicción para un partido futuro usando datos previos
 home_team = 'Liverpool'
@@ -97,7 +98,7 @@ away_team = 'Chelsea'
 home_team_encoded = label_encoder.transform([home_team])[0]
 away_team_encoded = label_encoder.transform([away_team])[0]
 
-# Estimaciones basadas en el rendimiento reciente (usar datos que estén disponibles)
+# Estimaciones basadas en el rendimiento reciente
 home_team_shots = 16  # Tiros del Local en sus últimos partidos
 away_team_shots = 22   # Tiros del Visitante en sus últimos partidos
 home_team_shots_on_target = 4  # Tiros a puerta del Aston Villa
@@ -123,12 +124,12 @@ goles_local_pred = regression_model_local.predict(partido_futuro_scaled)[0]
 goles_visitante_pred = regression_model_visitante.predict(partido_futuro_scaled)[0]
 
 # Predicción del resultado del futuro partido
-resultado_pred = grid_search.predict(partido_futuro_scaled)[0]
+resultado_pred = classification_model.predict(partido_futuro_scaled)[0]
 resultado_str = 'Victoria Local' if resultado_pred == 'H' else 'Empate' if resultado_pred == 'D' else 'Victoria Visitante'
 
 # Salida con mejor formato
 print("\n--- Predicción para el partido ---")
-print(f"Partido: {home_team} vs {away_team}")
-print(f"Goles Predichos - {home_team}: {goles_local_pred:.2f}")
-print(f"Goles Predichos - {away_team}: {goles_visitante_pred:.2f}")
-print(f"Resultado Predicho: {resultado_str}\n")
+print(f"🏟️ Partido: {home_team} vs {away_team}")
+print(f"⚽ Goles Predichos - {home_team}: {goles_local_pred:.2f}")
+print(f"⚽ Goles Predichos - {away_team}: {goles_visitante_pred:.2f}")
+print(f"🏅 Resultado Predicho: {resultado_str}\n")

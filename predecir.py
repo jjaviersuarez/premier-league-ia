@@ -6,12 +6,10 @@ from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier, XGBRegressor
 from imblearn.over_sampling import SMOTE
 from sklearn.metrics import accuracy_score, mean_squared_error
+from tabulate import tabulate
 
 # Cargar el dataset
 df = pd.read_csv("PremierLeague.csv")
-
-# Ver los nombres de las columnas
-print(df.columns)
 
 # Convertir a tipo numérico las columnas relevantes
 df['B365HomeTeam'] = pd.to_numeric(df['B365HomeTeam'], errors='coerce')
@@ -45,9 +43,8 @@ X_preprocessed = preprocessor.fit_transform(df.drop(columns=columns_to_drop, err
 # Convertir las clases 'FullTimeResult' a valores numéricos
 label_encoder = LabelEncoder()
 
-# Asegurarse de que la columna 'FullTimeResult' exista antes de asignarla como variable objetivo
 if 'FullTimeResult' in df.columns:
-    y_result = label_encoder.fit_transform(df['FullTimeResult'])  # Convertir a clases numéricas
+    y_result = label_encoder.fit_transform(df['FullTimeResult'])
 else:
     raise ValueError("'FullTimeResult' no se encuentra en el DataFrame.")
 
@@ -62,18 +59,9 @@ X_train_res_smote, y_train_res_smote = smote.fit_resample(X_train, y_train_resul
 model_result = XGBClassifier(random_state=42)
 model_result.fit(X_train_res_smote, y_train_res_smote)
 
-# Hacer predicciones
-y_pred_result = model_result.predict(X_test)
-
-# Evaluar el rendimiento del modelo
-accuracy = accuracy_score(y_test_result, y_pred_result)
-print(f'Accuracy para la predicción del resultado: {accuracy}')
-
-# Para predecir goles, usaré otro modelo de regresión
+# Separar en entrenamiento y prueba para goles
 y_home_goals = df['FullTimeHomeTeamGoals']
 y_away_goals = df['FullTimeAwayTeamGoals']
-
-# Separar en entrenamiento y prueba para goles
 X_train_home_goals, X_test_home_goals, y_train_home_goals, y_test_home_goals = train_test_split(X_preprocessed, y_home_goals, test_size=0.2, random_state=42)
 X_train_away_goals, X_test_away_goals, y_train_away_goals, y_test_away_goals = train_test_split(X_preprocessed, y_away_goals, test_size=0.2, random_state=42)
 
@@ -85,19 +73,8 @@ model_home_goals.fit(X_train_home_goals, y_train_home_goals)
 model_away_goals = XGBRegressor(random_state=42)
 model_away_goals.fit(X_train_away_goals, y_train_away_goals)
 
-# Hacer predicciones de goles
-y_pred_home_goals = model_home_goals.predict(X_test_home_goals)
-y_pred_away_goals = model_away_goals.predict(X_test_away_goals)
-
-# Evaluar el rendimiento de los modelos de goles
-mse_home_goals = mean_squared_error(y_test_home_goals, y_pred_home_goals)
-mse_away_goals = mean_squared_error(y_test_away_goals, y_pred_away_goals)
-
-print(f'MSE para predicción de goles del equipo local: {mse_home_goals}')
-print(f'MSE para predicción de goles del equipo visitante: {mse_away_goals}')
-
-# Función para predecir partido futuro
-def predecir_partido_futuro(home_team, away_team, bet365_home, bet365_draw, bet365_away):
+# Función mejorada para predecir partido futuro con formato de salida mejorado
+def predecir_partido_futuro_mejorado(home_team, away_team, bet365_home, bet365_draw, bet365_away):
     # Crear un nuevo dataframe con los datos del partido futuro
     partido_futuro = pd.DataFrame({
         'HomeTeam': [home_team],
@@ -117,10 +94,57 @@ def predecir_partido_futuro(home_team, away_team, bet365_home, bet365_draw, bet3
     # Predecir goles del equipo local y visitante
     goles_local_predichos = model_home_goals.predict(partido_preprocesado)
     goles_visitante_predichos = model_away_goals.predict(partido_preprocesado)
+
+    # Crear tabla para mostrar el resultado
+    resultados = [
+        ["Equipo Local", home_team],
+        ["Equipo Visitante", away_team],
+        ["Probabilidad Casa (B365)", bet365_home],
+        ["Probabilidad Empate (B365)", bet365_draw],
+        ["Probabilidad Visitante (B365)", bet365_away],
+        ["Resultado Predicho", resultado_predicho_label[0]],
+        ["Goles Local Predichos", round(goles_local_predichos[0], 2)],
+        ["Goles Visitante Predichos", round(goles_visitante_predichos[0], 2)]
+    ]
     
-    print(f'Resultado predicho: {resultado_predicho_label[0]}')
-    print(f'Goles del equipo local predichos: {goles_local_predichos[0]}')
-    print(f'Goles del equipo visitante predichos: {goles_visitante_predichos[0]}')
+    print(tabulate(resultados, headers=["Descripción", "Valor"], tablefmt="fancy_grid"))
 
 # Ejemplo de uso
-predecir_partido_futuro("Liverpool", "Chelsea", bet365_home=1.6, bet365_draw=4.5, bet365_away=5.25)
+predecir_partido_futuro_mejorado("Liverpool", "Chelsea", bet365_home=1.6, bet365_draw=4.5, bet365_away=5.25)
+
+"""
+
+# Ajuste de hiperparámetros del modelo de clasificación
+param_grid = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [10, 20, None],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'max_features': ['auto', 'sqrt']
+}
+
+classification_model = RandomForestClassifier(random_state=42)
+grid_search = GridSearchCV(estimator=classification_model, param_grid=param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+grid_search.fit(X_train_resampled, y_train_resultado_resampled)
+
+# Evaluación del modelo para la predicción de goles (MSE)
+y_pred_goles_local = regression_model_local.predict(X_test_scaled)
+y_pred_goles_visitante = regression_model_visitante.predict(X_test_scaled)
+mse_local = mean_squared_error(y_test_goles_local, y_pred_goles_local)
+mse_visitante = mean_squared_error(y_test_goles_visitante, y_pred_goles_visitante)
+
+# Salida mejorada para la evaluación del modelo
+print("\n" + "="*50)
+print("🔍 Evaluación del Modelo")
+print("="*50)
+print(f"📊 Error Cuadrático Medio (MSE) Goles Local: {mse_local:.4f}")
+print(f"📊 Error Cuadrático Medio (MSE) Goles Visitante: {mse_visitante:.4f}")
+print("="*50)
+
+# Evaluación del modelo de clasificación (precisión)
+y_pred_resultado = grid_search.predict(X_test_scaled)
+accuracy = accuracy_score(y_test_resultado, y_pred_resultado)
+print(f"🎯 Precisión del Modelo de Clasificación (Resultado): {accuracy:.4%}")
+print(f"🔧 Mejores parámetros encontrados por GridSearchCV: {grid_search.best_params_}")
+print("="*50)
+"""

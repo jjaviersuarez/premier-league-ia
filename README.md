@@ -50,7 +50,7 @@ Para más contenido de programación y machine learning, ¡sígueme en mis redes
 
 1. Clona este repositorio:
    ```bash
-   [git clone https://github.com/tu-usuario/prediccion-partidos-premier-league.git](https://github.com/jjaviersuarez/premier-league-ia.git)
+   git clone https://github.com/tu-usuario/prediccion-partidos-premier-league.git
    ```
 2. Instala las dependencias:
    ```bash
